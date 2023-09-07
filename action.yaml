@@ -9,7 +9,7 @@ branding:
 inputs:
 
   admin-token:
-    description: A personal access token.
+    description: A personal access token with administration access to the repository.
     required: true
 
 
@@ -27,7 +27,7 @@ runs:
     - uses: actions/checkout@v3
       with:
         ref: 'main'
-        sparse-checkout: meta/.out/metadata.json
+        sparse-checkout: meta/.out
         sparse-checkout-cone-mode: false
 
     - name: 'Read repository metadata'
@@ -35,13 +35,20 @@ runs:
       shell: bash
       run: echo "meta=$(cat meta/.out/metadata.json)" >> $GITHUB_OUTPUT
 
+    - name: 'Sync labels'
+      # https://github.com/marketplace/actions/label-syncer
+      uses: micnncim/action-label-syncer@v1.3.0
+      with:
+        manifest: .github/labels.yaml
+        prune: true  # delete removed labels
+
     - name: 'Update repository settings'
-      # https://octokit.github.io/rest.js/v19
+      # https://octokit.github.io/rest.js
       # https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28
       uses: actions/github-script@v6
       env:
-        REPO_NAME: ${{ fromJSON(steps.read.outputs.meta).project.name }}
-        REPO_DESCRIPTION: ${{ fromJSON(steps.read.outputs.meta).project.tagline }}
+        REPO_NAME: ${{ fromJSON(steps.read.outputs.meta).name }}
+        REPO_DESCRIPTION: ${{ fromJSON(steps.read.outputs.meta).tagline }}
         REPO_HOMEPAGE: ${{ fromJSON(steps.read.outputs.meta).url.website.base }}
       with:
         github-token: ${{ inputs.admin-token }}
@@ -74,7 +81,7 @@ runs:
           github.rest.repos.replaceAllTopics({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            names: ${{ toJSON(fromJSON(needs.metadata.outputs.json).project.keywords_slugs) }},
+            names: ${{ toJSON(fromJSON(steps.read.outputs.meta).keyword_slugs) }},
           })
 
           github.rest.repos.updateBranchProtection({
