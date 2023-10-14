@@ -39,6 +39,7 @@ runs:
 
     - name: 'Sync labels'
       # https://github.com/marketplace/actions/label-syncer
+      # NOTE: requires 'pull-requests: write' permission (https://github.com/micnncim/action-label-syncer/issues/79#issuecomment-1558111026)
       uses: micnncim/action-label-syncer@v1.3.0
       with:
         manifest: .github/labels.yaml
